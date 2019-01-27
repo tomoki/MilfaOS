@@ -1,67 +1,41 @@
-; hello-os
+; milfa-os
 ; TAB=4
+    org 0x7c00  ; Where this program is loaded
 
-		ORG		0x7c00			; ���̃v���O�������ǂ��ɓǂݍ��܂��̂�
+; General FAT12 floppy configuration
+; Refer: http://elm-chan.org/docs/fat.html
 
-; �ȉ��͕W���I��FAT12�t�H�[�}�b�g�t���b�s�[�f�B�X�N�̂��߂̋L�q
+    jmp short entry  ; BS_JmpBoot     (3 byte)
+    nop              ; "jmp short entry" generates 2 byte, so insert nop (0x90)
+    db "milfa-os"    ; BS_OEMName     (8 byte)
+    dw 512           ; BPB_BytsPerSec (2 byte)
+    db 1             ; BPB_SecPerClus (1 byte)
+    dw 1             ; BPB_RsvdSecCnt (2 byte)
+    db 2             ; BPB_NumFATs    (1 byte)
+    dw 224           ; BPB_RootEntCnt (2 byte)
+    dw 2880          ; BPB_TotSec16   (2 byte), Drive's size, must be 2880
+    db 0xf0          ; BPB_Media      (1 byte), media type, must be 0xf0
+    dw 9             ; BPB_FATSz16    (2 byte)
+    dw 18            ; BPB_SecPerTrk  (2 byte)
+    dw 2             ; BPB_NumHeads   (2 byte)
+    dd 0             ; BPB_HiddSec    (4 byte)
+    dd 0             ; BPB_TotSec32   (4 byte), BPB_TotSec16 should be true value as it's less than 0x10000.
+    db 0             ; BS_DrvNum      (1 byte)
+    db 0             ; BS_Reserved1   (1 byte)
+    db 0x29          ; BS_BootSig     (1 byte)
+    dd 0x19921020    ; BS_VolID       (4 byte)
+    db "MilfaOSVolu" ; BS_VolLab      (11 byte)
+    db "FAT12   "    ; BS_FilSysType  (8 byte)
 
-		JMP		entry
-		DB		0x90
-		DB		"HELLOIPL"		; �u�[�g�Z�N�^�̖��O��R�ɏ����Ă悢�i8�o�C�g�j
-		DW		512				; 1�Z�N�^�̑傫���i512�ɂ��Ȃ���΂����Ȃ��j
-		DB		1				; �N���X�^�̑傫���i1�Z�N�^�ɂ��Ȃ���΂����Ȃ��j
-		DW		1				; FAT���ǂ�����n�܂邩�i���ʂ�1�Z�N�^�ڂ���ɂ���j
-		DB		2				; FAT�̌��i2�ɂ��Ȃ���΂����Ȃ��j
-		DW		224				; ���[�g�f�B���N�g���̈�̑傫���i���ʂ�224�G���g���ɂ���j
-		DW		2880			; ���̃h���C�u�̑傫���i2880�Z�N�^�ɂ��Ȃ���΂����Ȃ��j
-		DB		0xf0			; ���f�B�A�̃^�C�v�i0xf0�ɂ��Ȃ���΂����Ȃ��j
-		DW		9				; FAT�̈�̒����i9�Z�N�^�ɂ��Ȃ���΂����Ȃ��j
-		DW		18				; 1�g���b�N�ɂ����̃Z�N�^�����邩�i18�ɂ��Ȃ���΂����Ȃ��j
-		DW		2				; �w�b�h�̐��i2�ɂ��Ȃ���΂����Ȃ��j
-		DD		0				; �p�[�e�B�V������g���ĂȂ��̂ł����͕K��0
-		DD		2880			; ���̃h���C�u�傫�������x����
-		DB		0,0,0x29		; �悭�킩��Ȃ����ǂ��̒l�ɂ��Ă����Ƃ����炵��
-		DD		0xffffffff		; ���Ԃ�{�����[���V���A���ԍ�
-		DB		"HELLO-OS   "	; �f�B�X�N�̖��O�i11�o�C�g�j
-		DB		"FAT12   "		; �t�H�[�}�b�g�̖��O�i8�o�C�g�j
-		RESB	18				; �Ƃ肠����18�o�C�g�����Ă���
-
-; �v���O�����{��
-
+    ; BS_BootCode (448)
 entry:
-		MOV		AX,0			; ���W�X�^������
-		MOV		SS,AX
-		MOV		SP,0x7c00
-		MOV		DS,AX
-		MOV		ES,AX
+    nop
 
-		MOV		SI,msg
-putloop:
-		MOV		AL,[SI]
-		ADD		SI,1			; SI��1�𑫂�
-		CMP		AL,0
-		JE		fin
-		MOV		AH,0x0e			; �ꕶ���\���t�@���N�V����
-		MOV		BX,15			; �J���[�R�[�h
-		INT		0x10			; �r�f�IBIOS�Ăяo��
-		JMP		putloop
-fin:
-		HLT						; ��������܂�CPU���~������
-		JMP		fin				; �������[�v
-
-msg:
-		DB		0x0a, 0x0a		; ���s��2��
-		DB		"hello, world"
-		DB		0x0a			; ���s
-		DB		0
-
-		RESB 0x1fe-($-$$)		; 0x7dfe�܂ł�0x00�Ŗ��߂閽��
-
-		DB		0x55, 0xaa
-
-; �ȉ��̓u�[�g�Z�N�^�ȊO�̕����̋L�q
-
-		DB		0xf0, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00
-		RESB	4600
-		DB		0xf0, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00
-		RESB	1469432
+    ; End of boot sector
+    resb 448 - ($-$$-62) ; padding rest of BS_BootCode.
+                         ; $ is current position, $$ is where this section starts.
+                         ; In this nas, $$ is what org specifies (0x7c00).
+                         ; Header is 64 byte, therefore $$-$-64 = BS_BootCode's actual size.
+                         ; BS_BootCode must be 448 byte, so we need 448 - ($$-$-64) paddings.
+                         ; https://www.nasm.us/xdoc/2.14.02/html/nasmdoc3.html#section-3.5
+    db 0x55, 0xAA        ; BS_BootSign (2 byte)
