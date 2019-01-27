@@ -35,7 +35,7 @@ entry:
     resb 448 - ($-$$-62) ; padding rest of BS_BootCode.
                          ; $ is current position, $$ is where this section starts.
                          ; In this nas, $$ is what org specifies (0x7c00).
-                         ; Header is 64 byte, therefore $$-$-64 = BS_BootCode's actual size.
-                         ; BS_BootCode must be 448 byte, so we need 448 - ($$-$-64) paddings.
+                         ; Header is 62 byte, therefore $$-$-62 = BS_BootCode's actual size.
+                         ; BS_BootCode must be 448 byte, so we need 448 - ($$-$-62) paddings.
                          ; https://www.nasm.us/xdoc/2.14.02/html/nasmdoc3.html#section-3.5
     db 0x55, 0xAA        ; BS_BootSign (2 byte)
