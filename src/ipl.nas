@@ -1,5 +1,8 @@
 ; milfa-os
 ; TAB=4
+
+cyls equ 10 ; number of cylinders to read
+
     org 0x7c00  ; Where this program is loaded
 
 ; General FAT12 floppy configuration
@@ -29,7 +32,68 @@
 
     ; BS_BootCode (448)
 entry:
-    nop
+    mov ax, 0
+    mov ss, ax
+    mov sp, 0x7c00      ; program starts at 0x7c00, stack should grow from 0x7c00
+    mov ds, ax
+
+; Read disk
+    mov ax, 0x0820        ; Read to 0x0820
+    mov es, ax
+    mov ch, 0            ; Cylinder 0
+    mov dh, 0            ; Head 0
+    mov cl, 2            ; Sector 2
+
+readloop:
+    mov ah, 0x02         ; Read disk
+    mov al, 1            ; 1 Sector
+    mov bx, 0            ; Will copy to [ES:BX]
+    mov dl, 0x0          ; Drive 0 (?)
+    int 0x13             ; Issue BIOS call
+    jnc next             ; If carry flag is not set (= no error occurs), then go next
+    ; Error
+    jmp error
+next:
+    mov ax, es        ; What we want to do is "add es, 0x0020"
+    add ax, 0x0020    ; but "es" register doesn't support that.
+    mov es, ax        ; so we use "ax" temporary.
+    add cl, 1         ; Add 1 to sector variable
+    cmp cl, 18
+    jbe readloop      ; if cl <= 18, then goto readloop
+    mov cl, 1         ; Try next head.
+    add dh, 1
+    cmp dh, 2
+    jb readloop       ; if dh (head) < 2, then goto readloop
+    mov dh, 0
+    add ch, 1
+    cmp ch, cyls
+    jb readloop       ; goto next cylinder
+
+; Finish reading floppy.
+; Execute our program
+    mov [0x0ff0], ch  ; write how many cylinders we read to [0x0ff0]
+    jmp 0xc200        ; program should be loaded to 0xc200
+
+error:
+    mov si, errormsg
+putloop:
+    mov al, [si]
+    add si, 1
+    cmp al, 0    ; check if it's null terminator
+    je  fin      ; if null, then finish
+    mov ah, 0x0e ; show 1 character
+    mov bx, 15   ; color code
+    int 0x10
+    jmp putloop
+fin:
+    hlt
+    jmp fin
+errormsg:
+    ; "\n\nloaderror\n"
+    db 0x0a, 0x0a
+    db "load error"
+    db 0x0a
+    db 0x00
 
     ; End of boot sector
     resb 448 - ($-$$-62) ; padding rest of BS_BootCode.
