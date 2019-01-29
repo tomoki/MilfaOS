@@ -1,4 +1,5 @@
 #include <nasmfunc.h>
+#include <hankaku.h>
 
 void set_pallete(int start, int end, unsigned char* rgb)
 {
@@ -52,6 +53,27 @@ void box_fill(unsigned char* vram, int width, unsigned char c, int x0, int y0, i
     return;
 }
 
+void putfont8(unsigned char* vram, int width, char chara, unsigned char* font, unsigned char color, int x, int y)
+{
+    int index = chara * 16;
+    for (int dy = 0; dy < 16; dy++) {
+        int wy = y + dy;
+        for (int dx = 0; dx < 8; dx++) {
+            if (font[index + dy] & (1 << (7-dx)))
+                vram[wy * width + x + dx] = color;
+        }
+    }
+}
+
+void putfont8_str(unsigned char* vram, int width, char* str, unsigned char* font, unsigned char color, int x, int y)
+{
+    while(*str != '\0') {
+        putfont8(vram, width, *str, font, color, x, y);
+        str++;
+        x += 8;
+    }
+}
+
 struct BootInfo {
     char cyls;
     char leds;
@@ -67,7 +89,7 @@ void MilfaMain(void)
     init_palette();
     // 0xa0000 ~ 0xaffff is framebuffer
     for (int i = 0xa0000; i <= 0xaffff; i++) {
-        * ((char*)i) = i & 0x0f;
+        * ((char*)i) = 14;
     }
 
     struct BootInfo* bootInfo = (struct BootInfo*)0x0ff0;
@@ -75,6 +97,8 @@ void MilfaMain(void)
     box_fill(bootInfo->vram, bootInfo->screenWidth, 1, 20, 20, 120, 120);
     box_fill(bootInfo->vram, bootInfo->screenWidth, 2, 70, 50, 170, 150);
     box_fill(bootInfo->vram, bootInfo->screenWidth, 3, 120, 80, 220, 180);
+
+    putfont8_str(bootInfo->vram, bootInfo->screenWidth, "MilfaOS", font, 0, 100, 100);
 
 fin:
     io_hlt();

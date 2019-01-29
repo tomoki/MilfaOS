@@ -22,6 +22,9 @@ build/bootpack.o: src/bootpack.c src/nasmfunc.nasm src/oslink.lds
 build/milfa.sys: build/asmhead.o build/bootpack.o
 	cat build/asmhead.o build/bootpack.o > build/milfa.sys
 
+src/hankaku.h: tools/makefont.py data/hankaku.txt
+	python tools/makefont.py data/hankaku.txt > src/hankaku.h
+
 clean:
 	rm -r build/*
 
