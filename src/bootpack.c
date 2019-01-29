@@ -51,6 +51,17 @@ void box_fill(unsigned char* vram, int width, unsigned char c, int x0, int y0, i
     }
     return;
 }
+
+struct BootInfo {
+    char cyls;
+    char leds;
+    char videoMode;
+    char reserved0;
+    short screenWidth;
+    short screenHeight;
+    unsigned char* vram;
+};
+
 void MilfaMain(void)
 {
     init_palette();
@@ -59,10 +70,11 @@ void MilfaMain(void)
         * ((char*)i) = i & 0x0f;
     }
 
-    unsigned char* vram = 0xa0000;
-    box_fill(vram, 320, 1, 20, 20, 120, 120);
-    box_fill(vram, 320, 2, 70, 50, 170, 150);
-    box_fill(vram, 320, 3, 120, 80, 220, 180);
+    struct BootInfo* bootInfo = (struct BootInfo*)0x0ff0;
+
+    box_fill(bootInfo->vram, bootInfo->screenWidth, 1, 20, 20, 120, 120);
+    box_fill(bootInfo->vram, bootInfo->screenWidth, 2, 70, 50, 170, 150);
+    box_fill(bootInfo->vram, bootInfo->screenWidth, 3, 120, 80, 220, 180);
 
 fin:
     io_hlt();
