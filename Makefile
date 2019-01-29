@@ -1,3 +1,7 @@
+CC = gcc
+CFLAGS = -nostdlib -march=i686 -m32 -fno-pic -std=c11
+INCLUDE = -I src/
+
 default: build/milfa.img
 
 build/milfa.img: build/ipl build/milfa.sys
@@ -13,7 +17,7 @@ build/asmhead.o: src/asmhead.nas
 
 build/bootpack.o: src/bootpack.c src/nasmfunc.nasm src/oslink.lds
 	nasm -f elf32 src/nasmfunc.nasm -o build/nasmfunc.o
-	gcc src/bootpack.c build/nasmfunc.o -T src/oslink.lds -nostdlib -march=i686 -m32 -fno-pic -o build/bootpack.o
+	gcc src/bootpack.c build/nasmfunc.o -T src/oslink.lds $(CFLAGS) $(INCLUDE) -o build/bootpack.o
 
 build/milfa.sys: build/asmhead.o build/bootpack.o
 	cat build/asmhead.o build/bootpack.o > build/milfa.sys

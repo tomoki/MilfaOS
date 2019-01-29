@@ -1,8 +1,4 @@
-void io_hlt(void);
-void io_cli(void);
-int io_load_eflags(void);
-void io_store_eflags(int eflags);
-void io_out8(int port, int data);
+#include <nasmfunc.h>
 
 void set_pallete(int start, int end, unsigned char* rgb)
 {
@@ -46,6 +42,15 @@ void init_palette(void)
     set_pallete(0, 15, table_rgb);
 }
 
+void box_fill(unsigned char* vram, int width, unsigned char c, int x0, int y0, int x1, int y1)
+{
+    for (int x = x0; x <= x1; x++) {
+        for (int y = y0; y <= y1; y++) {
+            vram[y * width + x] = c;
+        }
+    }
+    return;
+}
 void MilfaMain(void)
 {
     init_palette();
@@ -53,6 +58,11 @@ void MilfaMain(void)
     for (int i = 0xa0000; i <= 0xaffff; i++) {
         * ((char*)i) = i & 0x0f;
     }
+
+    unsigned char* vram = 0xa0000;
+    box_fill(vram, 320, 1, 20, 20, 120, 120);
+    box_fill(vram, 320, 2, 70, 50, 170, 150);
+    box_fill(vram, 320, 3, 120, 80, 220, 180);
 
 fin:
     io_hlt();
