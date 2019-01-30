@@ -44,6 +44,47 @@ void init_palette(void)
     set_pallete(0, 15, table_rgb);
 }
 
+void init_mouse_cursor8(unsigned char* mouse, unsigned char background)
+{
+    static char cursor[16][16] = {
+        "xx..............",
+        "xox.............",
+        "xoox............",
+        "xooox...........",
+        "xoooox..........",
+        "xooooox.........",
+        "xoooooox........",
+        "xooooooox.......",
+        "xoooooooox......",
+        "xooooooooox.....",
+        "xoooooooooox....",
+        "xxxxxooooox......",
+        "x....xxox.......",
+        ".......xox......",
+        "........xxx.....",
+        "..........x....."
+    };
+    for (int y = 0; y < 16; y++) {
+        for (int x = 0; x < 16; x++) {
+            if (cursor[y][x] == '.')
+                mouse[y * 16 + x] = background;
+            else if(cursor[y][x] == 'o')
+                mouse[y * 16 + x] = 7; // white
+            else if(cursor[y][x] == 'x')
+                mouse[y * 16 + x] = 0; // black
+        }
+    }
+}
+
+void put_block8(unsigned char* vram, int width, unsigned char* block, int blockwidth, int blockheight, int x, int y)
+{
+    for (int dy = 0; dy < blockheight; dy++) {
+        for (int dx = 0; dx < blockwidth; dx++) {
+            vram[(y + dy) * width + (x + dx)] = block[dy * blockwidth + dx];
+        }
+    }
+}
+
 void box_fill(unsigned char* vram, int width, unsigned char c, int x0, int y0, int x1, int y1)
 {
     for (int x = x0; x <= x1; x++) {
@@ -95,17 +136,20 @@ void MilfaMain(void)
 
     struct BootInfo* bootInfo = (struct BootInfo*)0x0ff0;
 
-    box_fill(bootInfo->vram, bootInfo->screenWidth, 1, 20, 20, 120, 120);
-    box_fill(bootInfo->vram, bootInfo->screenWidth, 2, 70, 50, 170, 150);
-    box_fill(bootInfo->vram, bootInfo->screenWidth, 3, 120, 80, 220, 180);
+    // box_fill(bootInfo->vram, bootInfo->screenWidth, 1, 20, 20, 120, 120);
+    // box_fill(bootInfo->vram, bootInfo->screenWidth, 2, 70, 50, 170, 150);
+    // box_fill(bootInfo->vram, bootInfo->screenWidth, 3, 120, 80, 220, 180);
 
     putfont8_str(bootInfo->vram, bootInfo->screenWidth, "MilfaOS", font, 0, 100, 100);
 
     char s[256];
     sprintf(s, "scrnx = %d, scrny = %d", bootInfo->screenWidth, bootInfo->screenHeight);
     putfont8_str(bootInfo->vram, bootInfo->screenWidth, s, font, 0, 100, 120);
+    unsigned char mouse[16*16];
+    init_mouse_cursor8(mouse, 14);
+    put_block8(bootInfo->vram, bootInfo->screenWidth, mouse, 16, 16, 50, 50);
 
-
-        fin : io_hlt();
-    goto fin;
+    while(1) {
+        io_hlt();
+    }
 }
