@@ -1,5 +1,6 @@
 #include <nasmfunc.h>
 #include <hankaku.h>
+#include <stdio.h>
 
 void set_pallete(int start, int end, unsigned char* rgb)
 {
@@ -100,7 +101,11 @@ void MilfaMain(void)
 
     putfont8_str(bootInfo->vram, bootInfo->screenWidth, "MilfaOS", font, 0, 100, 100);
 
-fin:
-    io_hlt();
+    char s[256];
+    sprintf(s, "scrnx = %d", bootInfo->screenWidth);
+    putfont8_str(bootInfo->vram, bootInfo->screenWidth, s, font, 0, 100, 120);
+
+
+        fin : io_hlt();
     goto fin;
 }
