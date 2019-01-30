@@ -102,7 +102,7 @@ void MilfaMain(void)
     putfont8_str(bootInfo->vram, bootInfo->screenWidth, "MilfaOS", font, 0, 100, 100);
 
     char s[256];
-    sprintf(s, "scrnx = %d", bootInfo->screenWidth);
+    sprintf(s, "scrnx = %d, scrny = %d", bootInfo->screenWidth, bootInfo->screenHeight);
     putfont8_str(bootInfo->vram, bootInfo->screenWidth, s, font, 0, 100, 120);
 
 

@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -nostdlib -march=i686 -m32 -fno-pic -std=c11
+CFLAGS = -nostdlib -march=i686 -m32 -fno-pic -std=c11 -fno-stack-protector
 INCLUDE = -I src/ -I src/libc
 LDFLAGS = -nostdlib -march=i686 -m32 -fno-pic -std=c11
 
