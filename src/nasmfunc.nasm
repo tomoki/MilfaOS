@@ -12,7 +12,9 @@ global io_out32
 
 global io_store_eflags
 global io_load_eflags
-global write_mem8
+
+global load_gdtr
+global load_idtr
 
 [SECTION .text]
 ; void io_hlt(void)
@@ -84,4 +86,18 @@ io_store_eflags:
     mov eax, [esp+4]
     push eax
     popfd ; pop eflags
+    ret
+
+; void load_gdtr(int limit, int addr)
+load_gdtr:
+    mov ax, [esp+4]
+    mov [esp+6], ax
+    lgdt [esp+6]
+    ret
+
+; void load_idtr(int limit, int addr)
+load_idtr:
+    mov ax, [esp+4]
+    mov [esp+6], ax
+    lidt [esp+6]
     ret

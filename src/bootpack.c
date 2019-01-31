@@ -58,7 +58,7 @@ void init_mouse_cursor8(unsigned char* mouse, unsigned char background)
         "xoooooooox......",
         "xooooooooox.....",
         "xoooooooooox....",
-        "xxxxxooooox......",
+        "xxxxxooooox.....",
         "x....xxox.......",
         ".......xox......",
         "........xxx.....",
@@ -126,7 +126,70 @@ struct BootInfo {
     unsigned char* vram;
 };
 
-void MilfaMain(void)
+struct SegmentDescriptor {
+    short limit_low;
+    short base_low;
+    char base_mid;
+    char access_right;
+    char limit_high;
+    char base_high;
+};
+
+void set_segment_descriptor (struct SegmentDescriptor* sd, unsigned int limit, int base, int ar)
+{
+    if (limit > 0xfffff) {
+        ar |= 0x8000; // G_bit
+        limit /= 0x1000;
+    }
+    sd->limit_low = limit & 0xffff;
+    sd->base_low = base & 0xffff;
+    sd->base_mid = (base >> 16) & 0xff;
+    sd->access_right = ar & 0xff;
+    sd->limit_high = ((limit >> 16) & 0x0f) | ((ar >> 8) & 0xf0);
+    sd->base_high = (base >> 24) & 0xff;
+}
+
+struct GateDescriptor {
+    short offset_low;
+    short selector;
+    char dw_count;
+    char access_right;
+    short offset_high;
+};
+
+void set_gate_descriptor(struct GateDescriptor* gd, int offset, int selector, int ar)
+{
+    gd->offset_low = offset & 0xffff;
+    gd->selector = selector;
+    gd->dw_count = (ar >> 8) & 0xff;
+    gd->access_right = ar & 0xff;
+    gd->offset_high = (offset >> 16) & 0xffff;
+}
+
+void init_gdtidt(void)
+{
+    // 0x00270000 ~ 0x0027ffff
+    struct SegmentDescriptor* segmentDescriptors = (struct SegmentDescriptor*) 0x00270000;
+    // 0x0026f800 ~ 0x0026ffff
+    struct GateDescriptor* gateDescriptors = (struct GateDescriptor*) 0x0026f800;
+    for (int i = 0; i < 8192; i++)
+        set_segment_descriptor(&segmentDescriptors[i], 0, 0, 0);
+
+    // entire system memory
+    set_segment_descriptor(&segmentDescriptors[1], 0xffffffff, 0x00000000, 0x092);
+    // bootpack.mil
+    set_segment_descriptor(&segmentDescriptors[2], 0x0007ffff, 0x00280000, 0x09a);
+
+    load_gdtr(0xffff, 0x00270000);
+
+    for (int i = 0; i < 256; i++)
+        set_gate_descriptor(&gateDescriptors[i], 0, 0, 0);
+
+    load_idtr(0x7ff, 0x0026f800);
+}
+
+void
+MilfaMain(void)
 {
     init_palette();
     // 0xa0000 ~ 0xaffff is framebuffer
