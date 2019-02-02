@@ -42,4 +42,7 @@ clean:
 run: build/milfa.img
 	qemu-system-x86_64 -m 32 -fda build/milfa.img
 
+run-windows:
+	/mnt/c/Program\ Files/qemu/qemu-system-x86_64.exe -m 32 -fda build/milfa.img
+
 .PHONY: run
