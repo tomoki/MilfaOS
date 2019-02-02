@@ -1,3 +1,5 @@
+#include <bootpack.h>
+#include <nasmfunc.h>
 
 void set_pallete(int start, int end, unsigned char* rgb)
 {

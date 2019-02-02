@@ -1,5 +1,6 @@
 #include <bootpack.h>
 #include <nasmfunc.h>
+#include <stdio.h>
 
 void init_pic(void)
 {
@@ -33,21 +34,37 @@ void init_pic(void)
 }
 
 // PS/2 keyboard
-void inithandler21(int* esp)
+// See http://oswiki.osask.jp/?%28PIC%298259A
+void inthandler21(int* esp)
 {
-    struct BootInfo* bootInfo = (struct BootInfo*) ADDR_BOOTINFO;
+    struct BootInfo* bootInfo = (struct BootInfo*)ADDR_BOOTINFO;
+
+    // notify PIC to we receive interruption
+    io_out8(PIC0_OCW2, 0x61);
+
+    unsigned char data = io_in8(PORT_KEYDATA);
+    char str[256];
+    static int k = 0;
+    sprintf(str, "INT 21 (IRQ-1): PS/2 keyboard %d", data);
+
     box_fill(bootInfo->vram, bootInfo->screenWidth, 3, 0, 0, 32 * 8 - 1, 15);
-    putfont8_str(bootInfo->vram, bootInfo->screenWidth, "INT 21 (IRQ-1): PS/2 keyboard", font, 5, 0, 0);
-    while (1)
-        io_hlt();
+    putfont8_str(bootInfo->vram, bootInfo->screenWidth, str, font, 5, 0, 0);
+
 }
 
 // PS/2 mouse
-void inithandler2c(int* esp)
+void inthandler2c(int* esp)
 {
-    struct BootInfo* bootInfo = (struct BootInfo*) ADDR_BOOTINFO;
-    box_fill(bootInfo->vram, bootInfo->screenWidth, 3, 0, 0, 32 * 8 - 1, 15);
-    putfont8_str(bootInfo->vram, bootInfo->screenWidth, "INT 2c (IRQ-1): PS/2 mouse", font, 5, 0, 0);
-    while(1)
-        io_hlt();
+    // struct BootInfo* bootInfo = (struct BootInfo*) ADDR_BOOTINFO;
+    // box_fill(bootInfo->vram, bootInfo->screenWidth, 3, 0, 0, 32 * 8 - 1, 15);
+    // putfont8_str(bootInfo->vram, bootInfo->screenWidth, "INT 2c (IRQ-1): PS/2 mouse", font, 5, 0, 0);
+    // while(1)
+    //     io_hlt();
+}
+
+void inthandler27(int *esp)
+{
+    // In some chipset like Athlon64X2, this interruption is called when initialized.
+    // Tell PIC IRQ0-7 is ready
+    io_out8(PIC0_OCW2, 0x67);
 }

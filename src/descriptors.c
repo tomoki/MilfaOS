@@ -15,7 +15,6 @@ void set_segment_descriptor(struct SegmentDescriptor* sd, unsigned int limit, in
     sd->base_high = (base >> 24) & 0xff;
 }
 
-
 void set_gate_descriptor(struct GateDescriptor* gd, int offset, int selector, int ar)
 {
     gd->offset_low = offset & 0xffff;
@@ -31,7 +30,7 @@ void init_gdtidt(void)
     struct SegmentDescriptor* segmentDescriptors = (struct SegmentDescriptor*) ADDR_GDT;
     // 0x0026f800 ~ 0x0026ffff
     struct GateDescriptor* gateDescriptors = (struct GateDescriptor*) ADDR_IDT;
-    for (int i = 0; i < LIMIT_GDT / 8; i++)
+    for (int i = 0; i <= LIMIT_GDT / 8; i++)
         set_segment_descriptor(&segmentDescriptors[i], 0, 0, 0);
 
     // entire system memory
@@ -39,11 +38,14 @@ void init_gdtidt(void)
     // bootpack.mil
     set_segment_descriptor(&segmentDescriptors[2], LIMIT_BOOTPACK, ADDR_BOOTPACK, AR_CODE32_ER);
 
-    load_gdtr(0xffff, ADDR_GDT);
+    load_gdtr(LIMIT_GDT, ADDR_GDT);
 
-    for (int i = 0; i <= LIMIT_IDT; i++)
+    for (int i = 0; i <= LIMIT_IDT / 8; i++)
         set_gate_descriptor(&gateDescriptors[i], 0, 0, 0);
 
     load_idtr(LIMIT_IDT, ADDR_IDT);
 
+    set_gate_descriptor(&gateDescriptors[0x21], (int)asm_inthandler21, 2 << 3, AR_INTGATE32);
+    set_gate_descriptor(&gateDescriptors[0x27], (int)asm_inthandler27, 2 << 3, AR_INTGATE32);
+    set_gate_descriptor(&gateDescriptors[0x2c], (int)asm_inthandler2c, 2 << 3, AR_INTGATE32);
 }
