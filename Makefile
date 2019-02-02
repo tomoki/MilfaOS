@@ -3,6 +3,8 @@ CFLAGS = -nostdlib -march=i686 -m32 -fno-pic -std=c11 -fno-stack-protector
 INCLUDE = -I src/ -I src/libc
 LDFLAGS = -nostdlib -march=i686 -m32 -fno-pic -std=c11
 
+BOOTPACK_OBJS =  build/bootpack.o build/libc.o build/nasmfunc.o build/int.o build/hankaku.o build/descriptors.o build/graphics.o
+
 default: build/milfa.img
 
 build/milfa.img: build/ipl build/milfa.sys
@@ -22,11 +24,11 @@ build/nasmfunc.o: src/nasmfunc.nasm
 build/libc.o: src/libc/libc.c
 	$(CC) src/libc/libc.c $(CFLAGS) $(INCLUDE) -c -o build/libc.o
 
-build/bootpack.o: src/bootpack.c
-	$(CC) src/bootpack.c $(CFLAGS) $(INCLUDE) -c -o build/bootpack.o
+build/%.o: src/%.c
+	$(CC) src/$*.c $(CFLAGS) $(INCLUDE) -c -o build/$*.o
 
-build/bootpack.mil: build/bootpack.o build/libc.o build/nasmfunc.o
-	$(CC) build/bootpack.o build/libc.o build/nasmfunc.o -T src/oslink.lds -o build/bootpack.mil $(LDFLAGS)
+build/bootpack.mil: $(BOOTPACK_OBJS)
+	$(CC) $(BOOTPACK_OBJS) -T src/oslink.lds -o build/bootpack.mil $(LDFLAGS)
 
 build/milfa.sys: build/asmhead.o build/bootpack.mil
 	cat build/asmhead.o build/bootpack.mil > build/milfa.sys
