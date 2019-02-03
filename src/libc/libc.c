@@ -36,6 +36,8 @@ int sprintf(char * restrict s, char* restrict format, ...)
                 int* n = (int*) args;
                 s += int2str(s, *n);
                 format++;
+                n++;
+                args = n;
             }
         } else {
             *s = *format;

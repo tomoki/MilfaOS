@@ -7,6 +7,8 @@ void MilfaMain(void)
     init_gdtidt();
     init_pic();
     io_sti();
+    unsigned char keybuf[32];
+    initialize_ringbuffer_char(&keyboard_inputs, keybuf, 32);
 
     init_palette();
     struct BootInfo* bootInfo = (struct BootInfo*) ADDR_BOOTINFO;
@@ -36,6 +38,17 @@ void MilfaMain(void)
     io_out8(PIC1_IMR, 0xef);
 
     while (1) {
-        io_hlt();
+        io_cli();
+        if (count_ringbuffer_char(&keyboard_inputs) == 0) {
+            io_sti();
+            io_hlt();
+        } else {
+            unsigned char data;
+            get_ringbuffer_char(&keyboard_inputs, &data);
+            char str[256];
+            sprintf(str, "INT 21 (IRQ-1): PS/2 keyboard %d, %d", data, count_ringbuffer_char(&keyboard_inputs));
+            box_fill(bootInfo->vram, bootInfo->screenWidth, 3, 0, 0, bootInfo->screenWidth, 15);
+            putfont8_str(bootInfo->vram, bootInfo->screenWidth, str, font, 5, 0, 0);
+        }
     }
 }

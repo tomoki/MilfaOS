@@ -77,6 +77,19 @@ void set_gate_descriptor(struct GateDescriptor *gd, int offset, int selector, in
 // See http://oswiki.osask.jp/?cmd=read&page=%28AT%29keyboard&word=keyboard
 #define PORT_KEYDATA 0x0060
 
+struct RingBufferChar {
+    unsigned char *buffer;
+    int size;
+    int free;
+    int rp, wp;
+};
+
+struct RingBufferChar keyboard_inputs;
+void initialize_ringbuffer_char(struct RingBufferChar*, unsigned char* buf, int size);
+int count_ringbuffer_char(struct RingBufferChar*);
+int put_ringbuffer_char(struct RingBufferChar*, unsigned char data);
+int get_ringbuffer_char(struct RingBufferChar*, unsigned char* data);
+
 void init_pic(void);
 void inthandler21(int* esp);
 void inthandler27(int* esp);

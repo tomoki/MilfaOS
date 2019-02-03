@@ -33,23 +33,50 @@ void init_pic(void)
     io_out8(PIC1_IMR, 0xff);
 }
 
+void initialize_ringbuffer_char(struct RingBufferChar* rb, unsigned char* buffer, int size)
+{
+    rb->size = size;
+    rb->buffer = buffer;
+    rb->free = size;
+    rb->rp = 0;
+    rb->wp = 0;
+}
+
+int count_ringbuffer_char(struct RingBufferChar* rb)
+{
+    return rb->size - rb->free;
+}
+
+int put_ringbuffer_char(struct RingBufferChar* rb, unsigned char data)
+{
+    if (rb->free == 0) {
+        return -1;
+    }
+    rb->buffer[rb->wp] = data;
+    rb->wp = (rb->wp + 1) % rb->size;
+    rb->free--;
+    return 0;
+}
+
+int get_ringbuffer_char(struct RingBufferChar* rb, unsigned char* data)
+{
+    if (rb->free == rb->size) {
+        return -1;
+    }
+    *data = rb->buffer[rb->rp];
+    rb->rp = (rb->rp + 1) % rb->size;
+    rb->free++;
+    return 0;
+}
+
 // PS/2 keyboard
 // See http://oswiki.osask.jp/?%28PIC%298259A
 void inthandler21(int* esp)
 {
-    struct BootInfo* bootInfo = (struct BootInfo*)ADDR_BOOTINFO;
-
     // notify PIC to we receive interruption
     io_out8(PIC0_OCW2, 0x61);
-
     unsigned char data = io_in8(PORT_KEYDATA);
-    char str[256];
-    static int k = 0;
-    sprintf(str, "INT 21 (IRQ-1): PS/2 keyboard %d", data);
-
-    box_fill(bootInfo->vram, bootInfo->screenWidth, 3, 0, 0, 32 * 8 - 1, 15);
-    putfont8_str(bootInfo->vram, bootInfo->screenWidth, str, font, 5, 0, 0);
-
+    put_ringbuffer_char(&keyboard_inputs, data);
 }
 
 // PS/2 mouse
