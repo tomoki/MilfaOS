@@ -74,19 +74,20 @@ int get_ringbuffer_char(struct RingBufferChar* rb, unsigned char* data)
 void inthandler21(int* esp)
 {
     // notify PIC to we receive interruption
+    // Keyboard is connected to IRQ-1, 0x61 = 0x60 + 1
     io_out8(PIC0_OCW2, 0x61);
     unsigned char data = io_in8(PORT_KEYDATA);
     put_ringbuffer_char(&keyboard_inputs, data);
 }
 
-// PS/2 mouse
+// PS/2 mouse. It's connected to IRQ-12.
+// PIC1 stands for IRQ 8-15.
 void inthandler2c(int* esp)
 {
-    // struct BootInfo* bootInfo = (struct BootInfo*) ADDR_BOOTINFO;
-    // box_fill(bootInfo->vram, bootInfo->screenWidth, 3, 0, 0, 32 * 8 - 1, 15);
-    // putfont8_str(bootInfo->vram, bootInfo->screenWidth, "INT 2c (IRQ-1): PS/2 mouse", font, 5, 0, 0);
-    // while(1)
-    //     io_hlt();
+    io_out8(PIC1_OCW2, 0x64); // IRQ-12 is 4th pin of PIC1. 0x64 = 0x60 + 4.
+    io_out8(PIC0_OCW2, 0x62); // IRQ-2 is 2nd pin of PIC0. 0x62 = 0x60 + 2.
+    unsigned char data = io_in8(PORT_KEYDATA);
+    put_ringbuffer_char(&mouse_inputs, data);
 }
 
 void inthandler27(int *esp)

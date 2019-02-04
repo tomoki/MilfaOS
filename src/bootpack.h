@@ -76,6 +76,14 @@ void set_gate_descriptor(struct GateDescriptor *gd, int offset, int selector, in
 #define PIC1_OCW2  0x00a0
 // See http://oswiki.osask.jp/?cmd=read&page=%28AT%29keyboard&word=keyboard
 #define PORT_KEYDATA 0x0060
+#define PORT_KEYSTATUS 0x0064
+#define PORT_KEYCOMMAND 0x0064
+#define KEYCOMMAND_WRITE_MODE 0x60
+#define KEYCOMMAND_SENDTO_MOUSE 0xd4
+#define MOUSECOMMAND_ENABLE 0xf4
+#define KEYSTATUS_SEND_NOTREADY 0x02
+// XXX: why 0x47?
+#define KEYBOARD_MODE 0x47
 
 struct RingBufferChar {
     unsigned char *buffer;
@@ -85,6 +93,7 @@ struct RingBufferChar {
 };
 
 struct RingBufferChar keyboard_inputs;
+struct RingBufferChar mouse_inputs;
 void initialize_ringbuffer_char(struct RingBufferChar*, unsigned char* buf, int size);
 int count_ringbuffer_char(struct RingBufferChar*);
 int put_ringbuffer_char(struct RingBufferChar*, unsigned char data);
