@@ -7,8 +7,8 @@ BOOTPACK_OBJS =  build/bootpack.o build/libc.o build/nasmfunc.o build/int.o buil
 
 default: build/milfa.img
 
+# 1440   1440K, double-sided, 18 sectors per track, 80 cylinders (for 3 1/2 HD)
 build/milfa.img: build/ipl build/milfa.sys
-	# 1440   1440K, double-sided, 18 sectors per track, 80 cylinders (for 3 1/2 HD)
 	mformat -f 1440 -B build/ipl -C -i build/milfa.img ::
 	mcopy build/milfa.sys -i build/milfa.img ::
 
@@ -39,10 +39,12 @@ src/hankaku.h: tools/makefont.py data/hankaku.txt
 clean:
 	rm -r build/*
 
+# Instead of qemu-system-x86_64 -m 32 -fda build/milfa.img, use this format to suppress warning
 run: build/milfa.img
-	qemu-system-x86_64 -m 32 -fda build/milfa.img
+	qemu-system-x86_64 -m 32 -drive format=raw,file=build/milfa.img,index=0,if=floppy
+
 
 run-windows: build/milfa.img
-	/mnt/c/Program\ Files/qemu/qemu-system-x86_64.exe -m 32 -fda build/milfa.img
+	/mnt/c/Program\ Files/qemu/qemu-system-x86_64.exe -m 32 -drive format=raw,file=build/milfa.img,index=0,if=floppy
 
 .PHONY: run
