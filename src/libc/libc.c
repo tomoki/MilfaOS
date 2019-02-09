@@ -3,6 +3,12 @@
 
 int int2str(char* str, int n)
 {
+    int minus = n < 0;
+    if (minus) {
+        str[0] = '-';
+        str++;
+        n *= -1;
+    }
     // calculate how many numbers n has
     int a = n;
     int k = 1;
@@ -13,6 +19,9 @@ int int2str(char* str, int n)
 
     // insert characters backward
     int ret = k;
+    if (minus)
+        ret++; // -
+
     while (k > 0) {
         str[k-1] = '0' + (n % 10);
         n /= 10;

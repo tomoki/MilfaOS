@@ -104,5 +104,27 @@ void inthandler21(int* esp);
 void inthandler27(int* esp);
 void inthandler2c(int* esp);
 
+// mouse.c
+#define MOUSE_LEFT_CLICK (1 << 0)
+#define MOUSE_RIGHT_CLICK (1 << 1)
+#define MOUSE_CENTER_CLICK (1 << 2)
+
+struct MouseData {
+    // Metadata
+    unsigned char buf[3];
+    int phase;
+
+    // Extracted data
+    int x;
+    int y;
+    char button;
+};
+
+void wait_keyboard_controller_ready(void);
+void init_keyboard(void);
+void enable_mouse(struct MouseData*);
+// return 1 if MouseData.buf is fullfilled.
+int decode_mouse(struct MouseData*, unsigned int next_data);
+
 // hankaku.cpp
 extern char font[4096];

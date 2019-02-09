@@ -2,34 +2,14 @@
 #include <bootpack.h>
 #include <stdio.h>
 
-void wait_keyboard_controller_ready(void)
-{
-    while (io_in8(PORT_KEYSTATUS) & KEYSTATUS_SEND_NOTREADY) ;
-}
-
-void init_keyboard(void)
-{
-    wait_keyboard_controller_ready();
-    io_out8(PORT_KEYCOMMAND, KEYCOMMAND_WRITE_MODE);
-    wait_keyboard_controller_ready();
-    io_out8(PORT_KEYDATA, KEYBOARD_MODE);
-    return;
-}
-
-void enable_mouse(void)
-{
-    wait_keyboard_controller_ready();
-    io_out8(PORT_KEYCOMMAND, KEYCOMMAND_SENDTO_MOUSE);
-    wait_keyboard_controller_ready();
-    io_out8(PORT_KEYDATA, MOUSECOMMAND_ENABLE);
-}
-
 void MilfaMain(void)
 {
     init_gdtidt();
     init_pic();
     init_keyboard();
-    enable_mouse();
+
+    struct MouseData mouse_data;
+    enable_mouse(&mouse_data);
 
     unsigned char keybuf[32];
     initialize_ringbuffer_char(&keyboard_inputs, keybuf, 32);
@@ -54,9 +34,10 @@ void MilfaMain(void)
     char s[256];
     sprintf(s, "scrnx = %d, scrny = %d", bootInfo->screenWidth, bootInfo->screenHeight);
     putfont8_str(bootInfo->vram, bootInfo->screenWidth, s, font, 0, 100, 120);
+
     unsigned char mouse[16*16];
     init_mouse_cursor8(mouse, 14);
-    put_block8(bootInfo->vram, bootInfo->screenWidth, mouse, 16, 16, 50, 50);
+    int mouse_x = 16, mouse_y = 16;
 
     // Allow PIC1 and keyboard
     // 11111001
@@ -79,10 +60,20 @@ void MilfaMain(void)
         } else if (mouse_count > 0) {
             unsigned char data;
             get_ringbuffer_char(&mouse_inputs, &data);
-            char str[256];
-            sprintf(str, "mouse %d", data);
-            box_fill(bootInfo->vram, bootInfo->screenWidth, 3, 0, 15, bootInfo->screenWidth, 30);
-            putfont8_str(bootInfo->vram, bootInfo->screenWidth, str, font, 5, 0, 15);
+            int mouse_data_ready = decode_mouse(&mouse_data, data);
+            if (mouse_data_ready) {
+                char str[256];
+                sprintf(str, "mouse %d %d %d", mouse_data.button, mouse_data.x, mouse_data.y);
+                box_fill(bootInfo->vram, bootInfo->screenWidth, 3, 0, 15, bootInfo->screenWidth, 30);
+                putfont8_str(bootInfo->vram, bootInfo->screenWidth, str, font, 5, 0, 15);
+
+                // Erase previous
+                box_fill(bootInfo->vram, bootInfo->screenWidth, 14, mouse_x, mouse_y, mouse_x + 16, mouse_y + 16);
+                mouse_x += mouse_data.x;
+                mouse_y += mouse_data.y;
+                // Draw mouse
+                put_block8(bootInfo->vram, bootInfo->screenWidth, mouse, 16, 16, mouse_x, mouse_y);
+            }
         } else {
             io_sti();
             io_hlt();
