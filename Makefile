@@ -15,8 +15,8 @@ build/milfa.img: build/ipl build/milfa.sys
 build/ipl: src/ipl.nas
 	nasm src/ipl.nas -o build/ipl -l build/ipl.lst
 
-build/asmhead.o: src/asmhead.nas
-	nasm src/asmhead.nas -o build/asmhead.o
+build/asmhead.o: src/asmhead.nasm
+	nasm src/asmhead.nasm -o build/asmhead.o
 
 build/nasmfunc.o: src/nasmfunc.nasm
 	nasm -f elf32 src/nasmfunc.nasm -o build/nasmfunc.o
