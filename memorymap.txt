@@ -1,0 +1,8 @@
+0x00000000 - 0x000fffff: 1Mib,   Used in boot sequence
+0x00100000 - 0x00267fff: 1440kb, Floppy disk contents (copied)
+0x00268000 - 0x0026f7ff: 30kb, Empty
+0x0026f700 - 0x0026ffff: 2kb, IDT
+0x00270000 - 0x0027ffff: 64kb, GDT
+0x00280000 - 0x002fffff: 512kb, bootpack.mil
+0x00300000 - 0x003fffff: 1mb, stack etc
+0x00400000 -           : rest, Empty
