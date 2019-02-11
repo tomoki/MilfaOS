@@ -127,4 +127,4 @@ void enable_mouse(struct MouseData*);
 int decode_mouse(struct MouseData*, unsigned int next_data);
 
 // hankaku.cpp
-extern char font[4096];
+extern unsigned char font[4096];

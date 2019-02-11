@@ -34,7 +34,7 @@ int sprintf(char * restrict s, char* restrict format, ...)
 {
     va_list args;
     va_start(args, format);
-    int orig_s = s;
+    int orig_s = (int) s;
     while (*format != '\0') {
         if (*format == '%') {
             format++;
@@ -46,7 +46,7 @@ int sprintf(char * restrict s, char* restrict format, ...)
                 s += int2str(s, *n);
                 format++;
                 n++;
-                args = n;
+                args = (void*) n;
             }
         } else {
             *s = *format;
@@ -55,7 +55,7 @@ int sprintf(char * restrict s, char* restrict format, ...)
         }
     }
     *s = '\0';
-    int ret = s - orig_s;
+    int ret = ((int) s) - orig_s;
     va_end(args);
     return ret;
 }

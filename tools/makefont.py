@@ -18,7 +18,7 @@ footer = """
 
 print(header)
 
-print("char font[4096] = {")
+print("unsigned char font[4096] = {")
 
 for line in f.readlines():
     line = line.strip()

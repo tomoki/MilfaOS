@@ -3,7 +3,7 @@
 #define _ )*2
 #define s ((((((((0
 
-char font[4096] = {
+unsigned char font[4096] = {
 // char 0x00
 s _ _ _ _ _ _ _ _ ,
 s _ _ _ _ _ _ _ _ ,

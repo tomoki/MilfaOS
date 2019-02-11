@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -nostdlib -march=i686 -m32 -fno-pic -std=c11 -fno-stack-protector
+CFLAGS = -g -Wall -Werror -nostdlib -march=i686 -m32 -fno-pic -std=c11 -fno-stack-protector
 INCLUDE = -I src/ -I src/libc
 LDFLAGS = -nostdlib -march=i686 -m32 -fno-pic -std=c11
 
@@ -33,8 +33,8 @@ build/bootpack.mil: $(BOOTPACK_OBJS)
 build/milfa.sys: build/asmhead.o build/bootpack.mil
 	cat build/asmhead.o build/bootpack.mil > build/milfa.sys
 
-src/hankaku.h: tools/makefont.py data/hankaku.txt
-	python tools/makefont.py data/hankaku.txt > src/hankaku.h
+src/hankaku.c: tools/makefont.py data/hankaku.txt
+	python tools/makefont.py data/hankaku.txt > src/hankaku.c
 
 clean:
 	rm -r build/*
