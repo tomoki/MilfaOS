@@ -12,6 +12,8 @@ global io_out32
 
 global io_store_eflags
 global io_load_eflags
+global io_store_cr0
+global io_load_cr0
 
 global load_gdtr
 global load_idtr
@@ -94,6 +96,17 @@ io_store_eflags:
     mov eax, [esp+4]
     push eax
     popfd ; pop eflags
+    ret
+
+; unsigned int io_load_cr0(void);
+io_load_cr0:
+    mov eax, cr0
+    ret
+
+; void io_store_cr0(unsigned int cr0);
+io_store_cr0:
+    mov eax, [esp+4]
+    mov cr0, eax
     ret
 
 ; void load_gdtr(int limit, int addr)

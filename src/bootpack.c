@@ -2,6 +2,64 @@
 #include <bootpack.h>
 #include <stdio.h>
 
+#define EFLAG_AC_BIT 0x0004000
+#define CR0_CACHE_DISABLE 0x60000000
+
+unsigned int memtest_sub(unsigned int start, unsigned int end)
+{
+    unsigned int test     = 0xaa55aa55;
+    unsigned int neg_test = 0x55aa55aa;
+
+    // Test each 4kb
+    for (unsigned int i = start; i <= end; i += 0x1000) {
+        // Test last 4 byte
+        volatile unsigned int *p = (volatile unsigned int*) (i + 0x0ffc);
+        unsigned int old = *p;
+        *p = test;         // write test
+        *p ^= 0xffffffff;  // and reverse bits, needed for some chipset which returns
+                           // written values even when we don't have memory.
+
+        // not memory
+        if (*p != neg_test) {
+            *p = old;
+            return i;
+        }
+
+        // test again
+        *p ^= 0xffffffff;
+        // not memory
+        if (*p != test) {
+            *p = old;
+            return i;
+        }
+
+        *p = old;
+    }
+
+    return end;
+}
+
+unsigned int memtest(unsigned int start, unsigned int end)
+{
+    // TODO: to support 486, we need to check eflags
+
+    // Disable cache
+    {
+        unsigned cr0 = io_load_cr0();
+        cr0 |= CR0_CACHE_DISABLE;
+        io_store_cr0(cr0);
+    }
+
+    unsigned int ret = memtest_sub(start, end);
+    // Enable cache
+    {
+        unsigned cr0 = io_load_cr0();
+        cr0 |= CR0_CACHE_DISABLE;
+        io_store_cr0(cr0);
+    }
+    return ret;
+}
+
 void MilfaMain(void)
 {
     init_gdtidt();
@@ -34,6 +92,12 @@ void MilfaMain(void)
     char s[256];
     sprintf(s, "scrnx = %d, scrny = %d", bootInfo->screenWidth, bootInfo->screenHeight);
     putfont8_str(bootInfo->vram, bootInfo->screenWidth, s, font, 0, 100, 120);
+
+    // 0x00000000 ~ 0x004000000 is used in boot sequence
+    int memory_size_in_MB = memtest(0x00400000, 0xbfffffff) / (1024*1024);
+    sprintf(s, "memory = %d MB", memory_size_in_MB);
+    putfont8_str(bootInfo->vram, bootInfo->screenWidth, s, font, 0, 100, 150);
+
 
     unsigned char mouse[16*16];
     init_mouse_cursor8(mouse, 14);
