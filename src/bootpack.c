@@ -1,6 +1,7 @@
 #include <nasmfunc.h>
 #include <bootpack.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define EFLAG_AC_BIT 0x0004000
 #define CR0_CACHE_DISABLE 0x60000000
@@ -76,6 +77,10 @@ void MilfaMain(void)
 
     io_sti();
 
+    // 0x00000000 ~ 0x004000000 is used in boot sequence
+    size_t memory_size = memtest(0x00400000, 0xbfffffff);
+    init_malloc((void*) 0x00400000, memory_size - 0x00400000);
+
     init_palette();
     struct BootInfo* bootInfo = (struct BootInfo*) ADDR_BOOTINFO;
 
@@ -93,11 +98,8 @@ void MilfaMain(void)
     sprintf(s, "scrnx = %d, scrny = %d", bootInfo->screenWidth, bootInfo->screenHeight);
     putfont8_str(bootInfo->vram, bootInfo->screenWidth, s, font, 0, 100, 120);
 
-    // 0x00000000 ~ 0x004000000 is used in boot sequence
-    int memory_size_in_MB = memtest(0x00400000, 0xbfffffff) / (1024*1024);
-    sprintf(s, "memory = %d MB", memory_size_in_MB);
+    sprintf(s, "memory = %d MB  free: %d MB", memory_size / 1024 / 1024, malloc_free_size() / 1024 / 1024);
     putfont8_str(bootInfo->vram, bootInfo->screenWidth, s, font, 0, 100, 150);
-
 
     unsigned char mouse[16*16];
     init_mouse_cursor8(mouse, 14);
