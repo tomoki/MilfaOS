@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <nasmfunc.h>
 
 int int2str(char* str, int n)
 {
@@ -183,6 +184,65 @@ size_t malloc_free_size(void)
     for (struct MallocChunk* p = info->list; p != NULL; p = p->next) {
         if (p->is_free)
             ret += p->size;
+    }
+    return ret;
+}
+
+
+#define EFLAG_AC_BIT 0x0004000
+#define CR0_CACHE_DISABLE 0x60000000
+
+unsigned int memtest_sub(unsigned int start, unsigned int end)
+{
+    unsigned int test     = 0xaa55aa55;
+    unsigned int neg_test = 0x55aa55aa;
+
+    // Test each 4kb
+    for (unsigned int i = start; i <= end; i += 0x1000) {
+        // Test last 4 byte
+        volatile unsigned int *p = (volatile unsigned int*) (i + 0x0ffc);
+        unsigned int old = *p;
+        *p = test;         // write test
+        *p ^= 0xffffffff;  // and reverse bits, needed for some chipset which returns
+                           // written values even when we don't have memory.
+
+        // not memory
+        if (*p != neg_test) {
+            *p = old;
+            return i;
+        }
+
+        // test again
+        *p ^= 0xffffffff;
+        // not memory
+        if (*p != test) {
+            *p = old;
+            return i;
+        }
+
+        *p = old;
+    }
+
+    return end;
+}
+
+size_t memtest(size_t start, size_t end)
+{
+    // TODO: to support 486, we need to check eflags
+
+    // Disable cache
+    {
+        unsigned cr0 = io_load_cr0();
+        cr0 |= CR0_CACHE_DISABLE;
+        io_store_cr0(cr0);
+    }
+
+    unsigned int ret = memtest_sub(start, end);
+    // Enable cache
+    {
+        unsigned cr0 = io_load_cr0();
+        cr0 |= CR0_CACHE_DISABLE;
+        io_store_cr0(cr0);
     }
     return ret;
 }
