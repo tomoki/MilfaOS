@@ -246,3 +246,13 @@ size_t memtest(size_t start, size_t end)
     }
     return ret;
 }
+
+void* memset(void* buffer, int c, size_t n)
+{
+    unsigned char* b = (unsigned char*) buffer;
+    for (int i = 0; i < n; i++) {
+        *b = (unsigned char) c;
+        b++;
+    }
+    return buffer;
+}

@@ -1,5 +1,7 @@
 #include <bootpack.h>
 #include <nasmfunc.h>
+#include <stdlib.h>
+#include <math.h>
 
 void set_pallete(int start, int end, unsigned char* rgb)
 {
@@ -113,4 +115,126 @@ void putfont8_str(unsigned char* vram, int width, char* str, unsigned char* font
         str++;
         x += 8;
     }
+}
+
+// Dirty rect
+void merge_dirty_rect(struct Rect* merge_into, struct Rect* r)
+{
+    if (merge_into->width == 0 && merge_into->height == 0) {
+        merge_into->x = r->x;
+        merge_into->y = r->y;
+        merge_into->width = r->width;
+        merge_into->height = r->height;
+    } else {
+        int x0 = MIN(merge_into->x, r->x);
+        int x1 = MAX(merge_into->x + merge_into->width, r->x + r->width);
+        int y0 = MIN(merge_into->y, r->y);
+        int y1 = MAX(merge_into->y + merge_into->height, r->y + r->height);
+
+        merge_into->x = x0;
+        merge_into->y = y0;
+        merge_into->width = x1 - x0;
+        merge_into->height = y1 - y0;
+    }
+}
+
+void merge_dirty_layer_rect(struct Rect* merge_into, struct Layer* l)
+{
+    struct Rect rect;
+    rect.x = l->x;
+    rect.y = l->y;
+    rect.width = l->width;
+    rect.height = l->height;
+    merge_dirty_rect(merge_into, &rect);
+}
+
+void layer_global_refresh(struct LayerControl* lc, int gx0, int gx1, int gy0, int gy1)
+{
+    gx0 = MIN(MAX(0, gx0), lc->width);
+    gx1 = MIN(MAX(0, gx1), lc->width);
+    gy0 = MIN(MAX(0, gy0), lc->height);
+    gy1 = MIN(MAX(0, gy1), lc->height);
+
+    for (int x = gx0; x < gx1; x++) {
+        for (int y = gy0; y < gy1; y++) {
+            for (int i = lc->number_of_layers-1; i >= 0; i--) {
+                struct Layer* t = lc->sorted_layers[i];
+                if (t->x <= x && x < t->x + t->width &&
+                    t->y <= y && y < t->y + t->height) {
+                    int lx = x - t->x;
+                    int ly = y - t->y;
+                    lc->vram[y * lc->width + x] = t->buffer[ly * t->width + lx];
+                    break;
+                }
+            }
+        }
+    }
+}
+
+// x0, y0, x1, y1 is local coordinate in layer
+void layer_refresh(struct LayerControl* lc, struct Layer* layer, int x0, int y0, int x1, int y1)
+{
+    merge_dirty_layer_rect(&lc->dirty_rect, layer);
+}
+
+void layer_refresh_entire(struct LayerControl* lc, struct Layer* layer)
+{
+    layer_refresh(lc, layer, 0, 0, layer->width, layer->height);
+}
+
+void layer_move(struct LayerControl* lc, struct Layer* layer, int x, int y)
+{
+    merge_dirty_layer_rect(&lc->dirty_rect, layer);
+    layer->x = x;
+    layer->y = y;
+    merge_dirty_layer_rect(&lc->dirty_rect, layer);
+}
+
+struct LayerControl* init_layer_control(unsigned char* vram, int width, int height)
+{
+    struct LayerControl* lc = (struct LayerControl*) malloc(sizeof(struct LayerControl));
+    lc->vram = vram;
+    lc->width = width;
+    lc->height = height;
+    lc->number_of_layers = 0;
+
+    lc->dirty_rect.x = 0;
+    lc->dirty_rect.y = 0;
+    lc->dirty_rect.width = 0;
+    lc->dirty_rect.height = 0;
+
+    return lc;
+}
+
+struct Layer* layer_create(struct LayerControl* lc, int x, int y, int width, int height)
+{
+    int i = lc->number_of_layers;
+    struct Layer* layer = &lc->layers[i];
+
+    layer->buffer = malloc(sizeof(unsigned char) * width * height);
+    layer->x = x;
+    layer->y = y;
+    layer->width = width;
+    layer->height = height;
+
+    lc->sorted_layers[i] = layer;
+    // TODO: sort here
+
+    lc->number_of_layers++;
+    return layer;
+}
+
+void layer_flush(struct LayerControl* lc)
+{
+    int gx0 = lc->dirty_rect.x;
+    int gx1 = lc->dirty_rect.x + lc->dirty_rect.width;
+    int gy0 = lc->dirty_rect.y;
+    int gy1 = lc->dirty_rect.y + lc->dirty_rect.height;
+
+    layer_global_refresh(lc, gx0, gx1, gy0, gy1);
+
+    lc->dirty_rect.x = 0;
+    lc->dirty_rect.y = 0;
+    lc->dirty_rect.width = 0;
+    lc->dirty_rect.height = 0;
 }
