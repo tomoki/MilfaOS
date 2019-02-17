@@ -16,6 +16,7 @@ struct BootInfo {
 
 // graphics.c
 #define MAX_NUMBER_OF_LAYERS 400
+#define TRANSPARENT 35
 
 struct Layer {
     unsigned char* buffer;
@@ -23,6 +24,7 @@ struct Layer {
     int height;
     int x;
     int y;
+    int zindex;
 };
 
 struct Rect {
@@ -49,6 +51,7 @@ struct Layer* layer_create(struct LayerControl* lc, int x, int y, int width, int
 void layer_refresh(struct LayerControl* lc, struct Layer* layer, int x0, int y0, int x1, int y1);
 void layer_refresh_entire(struct LayerControl* lc, struct Layer* layer);
 void layer_move(struct LayerControl* lc, struct Layer* layer, int x, int y);
+void layer_change_zindex(struct LayerControl* lc, struct Layer* layer, int zindex);
 struct LayerControl* init_layer_control(unsigned char* vram, int width, int height);
 void layer_flush(struct LayerControl* lc);
 

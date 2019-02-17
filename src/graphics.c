@@ -1,6 +1,7 @@
 #include <bootpack.h>
 #include <nasmfunc.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 
 void set_pallete(int start, int end, unsigned char* rgb)
@@ -163,9 +164,27 @@ void layer_global_refresh(struct LayerControl* lc, int gx0, int gx1, int gy0, in
                     t->y <= y && y < t->y + t->height) {
                     int lx = x - t->x;
                     int ly = y - t->y;
-                    lc->vram[y * lc->width + x] = t->buffer[ly * t->width + lx];
+                    char c = t->buffer[ly * t->width + lx];
+                    if (c == TRANSPARENT)
+                        continue;
+                    lc->vram[y * lc->width + x] = c;
                     break;
                 }
+            }
+        }
+    }
+}
+
+void layer_sort(struct LayerControl* lc)
+{
+    int n = lc->number_of_layers;
+    for (int i = 0; i < n; i++) {
+        for (int j = 1; j < n - i; j++) {
+            struct Layer* l = lc->sorted_layers[j-1];
+            struct Layer* r = lc->sorted_layers[j];
+            if (l->zindex > r->zindex) {
+                lc->sorted_layers[j-1] = r;
+                lc->sorted_layers[j] = l;
             }
         }
     }
@@ -190,6 +209,13 @@ void layer_move(struct LayerControl* lc, struct Layer* layer, int x, int y)
     merge_dirty_layer_rect(&lc->dirty_rect, layer);
 }
 
+void layer_change_zindex(struct LayerControl* lc, struct Layer* layer, int zindex)
+{
+    layer->zindex = zindex;
+    merge_dirty_layer_rect(&lc->dirty_rect, layer);
+    layer_sort(lc);
+}
+
 struct LayerControl* init_layer_control(unsigned char* vram, int width, int height)
 {
     struct LayerControl* lc = (struct LayerControl*) malloc(sizeof(struct LayerControl));
@@ -212,15 +238,17 @@ struct Layer* layer_create(struct LayerControl* lc, int x, int y, int width, int
     struct Layer* layer = &lc->layers[i];
 
     layer->buffer = malloc(sizeof(unsigned char) * width * height);
+    memset(layer->buffer, TRANSPARENT, width * height);
+
     layer->x = x;
     layer->y = y;
     layer->width = width;
     layer->height = height;
+    layer->zindex = 0;
 
     lc->sorted_layers[i] = layer;
-    // TODO: sort here
-
     lc->number_of_layers++;
+    layer_sort(lc);
     return layer;
 }
 
