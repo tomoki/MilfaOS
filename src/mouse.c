@@ -36,18 +36,23 @@ void enable_mouse(struct MouseData* data)
 
 int decode_mouse(struct MouseData* data, unsigned int next_data)
 {
-    if (data->phase == 0 && next_data == 0xfa)
+    if (data->phase == 0) {
+        if (next_data == 0xfa)
+            data->phase = 1;
         return 0;
-    if (data->phase == 0 || data->phase == 1) {
-        data->buf[data->phase] = next_data;
-        data->phase++;
+    } else if (data->phase == 1) {
+        // validation
+        if ((next_data & 0xc8) == 0x08) {
+            data->buf[0] = next_data;
+            data->phase = 2;
+        }
         return 0;
     } else if (data->phase == 2) {
-        data->buf[data->phase] = next_data;
-        data->phase = 0;
-        // #define MOUSE_LEFT_CLICK (1 << 0)
-        // #define MOUSE_RIGHT_CLICK (1 << 1)
-        // #define MOUSE_CENTER_CLICK (1 << 2)
+        data->buf[1] = next_data;
+        data->phase = 3;
+    } else if (data->phase == 3) {
+        data->buf[2] = next_data;
+        data->phase = 1;
         data->button = data->buf[0] & (MOUSE_LEFT_CLICK | MOUSE_RIGHT_CLICK | MOUSE_CENTER_CLICK);
         data->x = data->buf[1];
         if (data->buf[0] & MOUSE_X_AXIS_SIGN)
