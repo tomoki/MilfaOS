@@ -21,9 +21,10 @@ void MilfaMain(void)
 
     io_sti();
 
-    // Allow PIC1 and keyboard
+    init_pit();
+    // Allow PIC1, keyboard, PIT
     // 11111001
-    io_out8(PIC0_IMR, 0xf9);
+    io_out8(PIC0_IMR, 0xf8);
     // Allow mouse
     // 11101111
     io_out8(PIC1_IMR, 0xef);
@@ -75,11 +76,10 @@ void MilfaMain(void)
 
     layer_flush(layerControl);
 
-    int counter = 0;
     while (1) {
 
         char str[256];
-        sprintf(str, "counter %d", counter++);
+        sprintf(str, "counter %d", timer_data.count);
         memset(keyboardInfoLayer->buffer, TRANSPARENT, keyboardInfoLayer->width * keyboardInfoLayer->height);
         putfont8_str(keyboardInfoLayer->buffer, keyboardInfoLayer->width, str, font, 5, 0, 0);
         layer_refresh_entire(layerControl, keyboardInfoLayer);
@@ -116,8 +116,9 @@ void MilfaMain(void)
                 layer_refresh_entire(layerControl, mouseInfoLayer);
             }
         } else {
+            io_sti();
+            io_hlt();
         }
-        io_sti();
         layer_flush(layerControl);
     }
 }

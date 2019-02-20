@@ -167,3 +167,11 @@ int decode_mouse(struct MouseData*, unsigned int next_data);
 
 // hankaku.cpp
 extern unsigned char font[4096];
+
+// timer.c
+struct TimerData {
+    unsigned int count;
+};
+
+struct TimerData timer_data;
+void init_pit(void);

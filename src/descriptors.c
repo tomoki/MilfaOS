@@ -45,6 +45,7 @@ void init_gdtidt(void)
 
     load_idtr(LIMIT_IDT, ADDR_IDT);
 
+    set_gate_descriptor(&gateDescriptors[0x20], (int)asm_inthandler20, 2 << 3, AR_INTGATE32);
     set_gate_descriptor(&gateDescriptors[0x21], (int)asm_inthandler21, 2 << 3, AR_INTGATE32);
     set_gate_descriptor(&gateDescriptors[0x27], (int)asm_inthandler27, 2 << 3, AR_INTGATE32);
     set_gate_descriptor(&gateDescriptors[0x2c], (int)asm_inthandler2c, 2 << 3, AR_INTGATE32);

@@ -3,7 +3,7 @@ CFLAGS = -g -Wall -Werror -nostdlib -march=i686 -m32 -fno-pic -std=c11 -fno-stac
 INCLUDE = -I src/ -I src/libc
 LDFLAGS = -nostdlib -march=i686 -m32 -fno-pic -std=c11
 
-BOOTPACK_OBJS =  build/bootpack.o build/libc.o build/nasmfunc.o build/int.o build/hankaku.o build/descriptors.o build/graphics.o build/mouse.o
+BOOTPACK_OBJS =  build/bootpack.o build/libc.o build/nasmfunc.o build/int.o build/hankaku.o build/descriptors.o build/graphics.o build/mouse.o build/timer.o
 
 default: build/milfa.img
 

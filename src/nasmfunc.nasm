@@ -18,10 +18,12 @@ global io_load_cr0
 global load_gdtr
 global load_idtr
 
+global asm_inthandler20
 global asm_inthandler21
 global asm_inthandler27
 global asm_inthandler2c
 
+extern inthandler20
 extern inthandler21
 extern inthandler27
 extern inthandler2c
@@ -171,6 +173,24 @@ asm_inthandler2c:
     mov ds, ax
     mov es, ax
     call inthandler2c
+    pop eax
+    popad
+    pop ds
+    pop es
+    iretd
+
+asm_inthandler20:
+    push es
+    push ds
+    ; pushad pushes
+    ; EAX ECX EDX EBX ESP EBP ESI EDI
+    pushad
+    mov eax, esp
+    push eax
+    mov ax, ss
+    mov ds, ax
+    mov es, ax
+    call inthandler20
     pop eax
     popad
     pop ds
