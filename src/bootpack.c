@@ -76,10 +76,17 @@ void MilfaMain(void)
 
     layer_flush(layerControl);
 
+    struct RingBufferChar timeout_buffer;
+    initialize_ringbuffer_char(&timeout_buffer, malloc(sizeof(unsigned char) * 100), 100);
+    int fired_per_1_sec = 0;
+    int fired_per_3_sec = 0;
+    set_timeout(&timeout_buffer, 1, 1000);
+    set_timeout(&timeout_buffer, 3, 3000);
+
     while (1) {
 
         char str[256];
-        sprintf(str, "counter %d", timer_data.count);
+        sprintf(str, "%d count/sec, %d count/3sec", fired_per_1_sec, fired_per_3_sec);
         memset(keyboardInfoLayer->buffer, TRANSPARENT, keyboardInfoLayer->width * keyboardInfoLayer->height);
         putfont8_str(keyboardInfoLayer->buffer, keyboardInfoLayer->width, str, font, 5, 0, 0);
         layer_refresh_entire(layerControl, keyboardInfoLayer);
@@ -88,6 +95,7 @@ void MilfaMain(void)
 
         int mouse_count = count_ringbuffer_char(&mouse_inputs);
         int keyboard_count = count_ringbuffer_char(&keyboard_inputs);
+        int timer_count = count_ringbuffer_char(&timeout_buffer);
         if (keyboard_count > 0) {
             unsigned char data;
             get_ringbuffer_char(&keyboard_inputs, &data);
@@ -114,6 +122,17 @@ void MilfaMain(void)
                 memset(mouseInfoLayer->buffer, TRANSPARENT, mouseInfoLayer->width * mouseInfoLayer->height);
                 putfont8_str(mouseInfoLayer->buffer, mouseInfoLayer->width, str, font, 5, 0, 0);
                 layer_refresh_entire(layerControl, mouseInfoLayer);
+            }
+        } else if (timer_count > 0) {
+            unsigned char data;
+            get_ringbuffer_char(&timeout_buffer, &data);
+
+            if (data == 1) {
+                fired_per_1_sec++;
+                set_timeout(&timeout_buffer, 1, 1000);
+            } else if(data == 3) {
+                fired_per_3_sec++;
+                set_timeout(&timeout_buffer, 3, 3000);
             }
         } else {
             io_sti();

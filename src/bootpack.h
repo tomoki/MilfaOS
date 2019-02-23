@@ -169,9 +169,23 @@ int decode_mouse(struct MouseData*, unsigned int next_data);
 extern unsigned char font[4096];
 
 // timer.c
-struct TimerData {
-    unsigned int count;
+#define MAX_NUMBER_OF_TIMERS 100
+
+struct Timeout {
+    struct RingBufferChar* buffer;
+    unsigned int timeout;
+    unsigned char data;
+    char used;
+    struct Timeout* next;
 };
 
-struct TimerData timer_data;
+struct TimerControl {
+    unsigned int count; // 1/100 s
+    struct Timeout timeouts[MAX_NUMBER_OF_TIMERS];
+    struct Timeout* sorted_timeouts;
+    unsigned int number_of_timeouts;
+};
+
+struct TimerControl* timer_control;
 void init_pit(void);
+int set_timeout(struct RingBufferChar* buffer, unsigned char data, unsigned int ms);
