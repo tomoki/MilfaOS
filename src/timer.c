@@ -76,36 +76,33 @@ int set_timeout(struct RingBufferChar* buffer, unsigned char data, unsigned int 
     timer->data = data;
     timer->used = 1;
 
-    // Insert new timer
     char is_inserted = 0;
+    struct Timeout* prev = NULL;
+    struct Timeout* next = timer_control->sorted_timeouts;
     for (int i = 0; i < timer_control->number_of_timeouts; i++) {
-        if (timer_control->sorted_timeouts[i].timeout > timer->timeout) {
+        if (timer->timeout < next->timeout) {
             if (i == 0) {
-                struct Timeout* next = &timer_control->sorted_timeouts[i];
-
+                // Insert as first element.
                 timer->next = next;
                 timer_control->sorted_timeouts = timer;
-
             } else {
-                struct Timeout* prev = &timer_control->sorted_timeouts[i-1];
-                struct Timeout* next = &timer_control->sorted_timeouts[i];
-
                 prev->next = timer;
                 timer->next = next;
             }
             is_inserted = 1;
             break;
         }
+        prev = next;
+        next = next->next;
     }
-    // timer should go last
+
+    // timer goes last.
     if (!is_inserted) {
         if (timer_control->number_of_timeouts == 0) {
-            // First element
             timer->next = NULL;
             timer_control->sorted_timeouts = timer;
         } else {
-            // Last element
-            timer_control->sorted_timeouts[timer_control->number_of_timeouts-1].next = timer;
+            prev->next = timer;
             timer->next = NULL;
         }
     }
