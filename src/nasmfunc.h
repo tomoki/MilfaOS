@@ -14,6 +14,7 @@ void io_out8(int port, int data);
 void load_gdtr(int limit, int addr);
 void load_idtr(int limit, int addr);
 void load_tr(int tr);
+void taskswitch3(void);
 void taskswitch4(void);
 
 void asm_inthandler20(int* esp);

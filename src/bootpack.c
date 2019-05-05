@@ -7,8 +7,27 @@
 
 void task4_main(void)
 {
+    struct RingBufferChar timeout_buffer;
+    unsigned char internal_buffer[100];
+    initialize_ringbuffer_char(&timeout_buffer, internal_buffer, 100);
+
+    set_timeout(&timeout_buffer, 5, 5000);
+
     while (1) {
-        io_hlt();
+        io_cli();
+        int timer_count = count_ringbuffer_char(&timeout_buffer);
+        if (timer_count == 0) {
+            io_sti();
+            io_hlt();
+        } else {
+            unsigned char data;
+            get_ringbuffer_char(&timeout_buffer, &data);
+            io_sti();
+            if (data == 5) {
+                taskswitch3();
+                set_timeout(&timeout_buffer, 5, 5000);
+            }
+        }
     }
 }
 
@@ -88,9 +107,11 @@ void MilfaMain(void)
 
     int fired_per_1_sec = 0;
     int fired_per_3_sec = 0;
+    int fired_per_10_sec = 0;
 
     set_timeout(&timeout_buffer, 1, 1000);
     set_timeout(&timeout_buffer, 3, 3000);
+    set_timeout(&timeout_buffer, 10, 10000);
 
     struct TaskStatusSegment tss[2];
     tss[0].ldtr = 0;
@@ -127,7 +148,7 @@ void MilfaMain(void)
     while (1) {
 
         char str[256];
-        sprintf(str, "%d count/sec, %d count/3sec", fired_per_1_sec, fired_per_3_sec);
+        sprintf(str, "%d cnt/sec, %d cnt/3sec, %d cnt/10sec", fired_per_1_sec, fired_per_3_sec, fired_per_10_sec);
         memset(keyboardInfoLayer->buffer, TRANSPARENT, keyboardInfoLayer->width * keyboardInfoLayer->height);
         putfont8_str(keyboardInfoLayer->buffer, keyboardInfoLayer->width, str, font, 5, 0, 0);
         layer_refresh_entire(layerControl, keyboardInfoLayer);
@@ -138,6 +159,7 @@ void MilfaMain(void)
         int keyboard_count = count_ringbuffer_char(&keyboard_inputs);
         int timer_count = count_ringbuffer_char(&timeout_buffer);
         if (keyboard_count > 0) {
+            io_sti();
             unsigned char data;
             get_ringbuffer_char(&keyboard_inputs, &data);
             char str[256];
@@ -146,6 +168,7 @@ void MilfaMain(void)
             putfont8_str(keyboardInfoLayer->buffer, keyboardInfoLayer->width, str, font, 5, 0, 0);
             layer_refresh_entire(layerControl, keyboardInfoLayer);
         } else if (mouse_count > 0) {
+            io_sti();
             unsigned char data;
             get_ringbuffer_char(&mouse_inputs, &data);
             int mouse_data_ready = decode_mouse(&mouse_data, data);
@@ -165,6 +188,7 @@ void MilfaMain(void)
                 layer_refresh_entire(layerControl, mouseInfoLayer);
             }
         } else if (timer_count > 0) {
+            io_sti();
             unsigned char data;
             get_ringbuffer_char(&timeout_buffer, &data);
 
@@ -174,8 +198,13 @@ void MilfaMain(void)
             } else if(data == 3) {
                 fired_per_3_sec++;
                 set_timeout(&timeout_buffer, 3, 3000);
+            } else if(data == 10) {
                 // test
                 taskswitch4();
+
+                fired_per_10_sec++;
+                set_timeout(&timeout_buffer, 10, 10000);
+
             }
         } else {
             io_sti();
