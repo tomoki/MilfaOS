@@ -18,8 +18,7 @@ global io_load_cr0
 global load_gdtr
 global load_idtr
 global load_tr
-global taskswitch3
-global taskswitch4
+global farjmp
 
 global asm_inthandler20
 global asm_inthandler21
@@ -131,6 +130,11 @@ load_idtr:
 ; void load_tr(int tr);
 load_tr:
     ltr [esp+4] ; tr = arg0
+    ret
+
+; void farjmp(int eip, int cs)
+farjmp:
+    jmp far [esp+4]
     ret
 
 ; void taskswitch3(void)

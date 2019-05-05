@@ -24,7 +24,7 @@ void task4_main(void)
             get_ringbuffer_char(&timeout_buffer, &data);
             io_sti();
             if (data == 5) {
-                taskswitch3();
+                farjmp(0, 3*8);
                 set_timeout(&timeout_buffer, 5, 5000);
             }
         }
@@ -200,7 +200,7 @@ void MilfaMain(void)
                 set_timeout(&timeout_buffer, 3, 3000);
             } else if(data == 10) {
                 // test
-                taskswitch4();
+                farjmp(0, 4*8);
 
                 fired_per_10_sec++;
                 set_timeout(&timeout_buffer, 10, 10000);
