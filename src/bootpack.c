@@ -5,6 +5,13 @@
 #include <math.h>
 #include <string.h>
 
+void task4_main(void)
+{
+    while (1) {
+        io_hlt();
+    }
+}
+
 void MilfaMain(void)
 {
     init_gdtidt();
@@ -78,10 +85,44 @@ void MilfaMain(void)
 
     struct RingBufferChar timeout_buffer;
     initialize_ringbuffer_char(&timeout_buffer, malloc(sizeof(unsigned char) * 100), 100);
+
     int fired_per_1_sec = 0;
     int fired_per_3_sec = 0;
+
     set_timeout(&timeout_buffer, 1, 1000);
     set_timeout(&timeout_buffer, 3, 3000);
+
+    struct TaskStatusSegment tss[2];
+    tss[0].ldtr = 0;
+    tss[0].iomap = 0x40000000;
+    tss[1].ldtr = 0;
+    tss[1].iomap = 0x40000000;
+
+    // 103 == sizeof(struct SegmentDescriptor)?
+    set_segment_descriptor(&((struct SegmentDescriptor*) ADDR_GDT)[3], 103, (int) (&tss[0]), AR_TSS32);
+    set_segment_descriptor(&((struct SegmentDescriptor*) ADDR_GDT)[4], 103, (int) (&tss[1]), AR_TSS32);
+
+    void* task4_stack = malloc(64 * 1024);
+    tss[1].eip = (int)&task4_main;
+    tss[1].eflags = 0x00000202; // IF = 1, default value?
+    tss[1].eax = 0;
+    tss[1].ecx = 0;
+    tss[1].edx = 0;
+    tss[1].ebx = 0;
+    // stack grows to 0.
+    tss[1].esp = (int)task4_stack + 64*1024;
+    tss[1].ebp = 0;
+    tss[1].edi = 0;
+    // except cs, use asmhead's segment temporary.
+    tss[1].es = 1 * 8;
+    tss[1].cs = 2 * 8; // bootpack's code segment
+    tss[1].ss = 1 * 8;
+    tss[1].ds = 1 * 8;
+    tss[1].fs = 1 * 8;
+    tss[1].gs = 1 * 8;
+
+    // Current program is 3rd of GDT.
+    load_tr(3 * 8);
 
     while (1) {
 
@@ -133,6 +174,8 @@ void MilfaMain(void)
             } else if(data == 3) {
                 fired_per_3_sec++;
                 set_timeout(&timeout_buffer, 3, 3000);
+                // test
+                taskswitch4();
             }
         } else {
             io_sti();

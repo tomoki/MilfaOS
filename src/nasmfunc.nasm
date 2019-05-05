@@ -17,6 +17,8 @@ global io_load_cr0
 
 global load_gdtr
 global load_idtr
+global load_tr
+global taskswitch4
 
 global asm_inthandler20
 global asm_inthandler21
@@ -123,6 +125,16 @@ load_idtr:
     mov ax, [esp+4]
     mov [esp+6], ax
     lidt [esp+6]
+    ret
+
+; void load_tr(int tr);
+load_tr:
+    ltr [esp+4] ; tr = arg0
+    ret
+
+; void taskswitch4(void)
+taskswitch4:
+    jmp 4*8:0
     ret
 
 asm_inthandler21:

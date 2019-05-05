@@ -69,6 +69,7 @@ void putfont8_str(unsigned char* vram, int width, char* str, unsigned char* font
 #define LIMIT_GDT 0x0000ffff
 #define AR_DATA32_RW 0x4092
 #define AR_CODE32_ER 0x409a
+#define AR_TSS32     0x0089
 #define AR_INTGATE32 0x008e
 #define ADDR_BOOTPACK 0x00280000
 #define LIMIT_BOOTPACK 0x0007ffff
@@ -89,6 +90,13 @@ struct GateDescriptor {
     char dw_count;
     char access_right;
     short offset_high;
+};
+
+struct TaskStatusSegment {
+    int backlink, esp0, ss0, esp1, ss1, esp2, ss2, cr3;
+    int eip, eflags, eax, ecx, edx, ebx, esp, ebp, esi, edi;
+    int es, cs, ss, ds, fs, gs;
+    int ldtr, iomap;
 };
 
 // void set_segment_descriptor(struct SegmentDescriptor* sd, unsigned int limit, int base, int ar);
