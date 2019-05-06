@@ -26,20 +26,34 @@ void init_pit(void)
 // inthandler20 is called every 1/100 s.
 void inthandler20(int* esp)
 {
-    check_timeout();
     io_out8(PIC0_OCW2, 0x60); // IRQ-0 is 0th pin of PIC0. 0x60 = 0x60 + 0
+    check_timeout();
 }
+
+void task_switch(void);
 
 void check_timeout()
 {
     timer_control->count++;
+
+    char do_Task_switch = 0;
     while (timer_control->sorted_timeouts != NULL && timer_control->sorted_timeouts->timeout <= timer_control->count) {
         struct Timeout* fired = timer_control->sorted_timeouts;
-        put_ringbuffer_char(fired->buffer, fired->data);
+
+        if (fired == task_timer)
+            do_Task_switch = 1;
+        else
+            put_ringbuffer_char(fired->buffer, fired->data);
+
         timer_control->sorted_timeouts = fired->next;
         timer_control->number_of_timeouts--;
+
         init_timeout(fired);
     }
+
+    // task switch must be here, as switching tasks will change EFLAGS and it may allow interrupt.
+    if (do_Task_switch)
+        task_switch();
 }
 
 void init_timeout(struct Timeout* timeout)
@@ -51,12 +65,8 @@ void init_timeout(struct Timeout* timeout)
     timeout->next = NULL;
 }
 
-int set_timeout(struct RingBufferChar* buffer, unsigned char data, unsigned int ms)
+struct Timeout* get_free_timer(void)
 {
-    // Prevent timer
-    int eflag = io_load_eflags();
-    io_cli();
-
     struct Timeout* timer = NULL;
     for (int i = 0; i < MAX_NUMBER_OF_TIMERS; i++) {
         if (!timer_control->timeouts[i].used) {
@@ -64,18 +74,11 @@ int set_timeout(struct RingBufferChar* buffer, unsigned char data, unsigned int 
             break;
         }
     }
-    if (timer == NULL) {
-        io_store_eflags(eflag);
-        return 1;
-    }
+    return timer;
+}
 
-    init_timeout(timer);
-    timer->buffer = buffer;
-    // our timer precision is 1/100
-    timer->timeout = timer_control->count + (ms / 10);
-    timer->data = data;
-    timer->used = 1;
-
+void insert_timer(struct Timeout* timer)
+{
     char is_inserted = 0;
     struct Timeout* prev = NULL;
     struct Timeout* next = timer_control->sorted_timeouts;
@@ -107,8 +110,60 @@ int set_timeout(struct RingBufferChar* buffer, unsigned char data, unsigned int 
         }
     }
     timer_control->number_of_timeouts++;
+}
+
+int set_timeout(struct RingBufferChar* buffer, unsigned char data, unsigned int ms)
+{
+    // Prevent timer
+    int eflag = io_load_eflags();
+    io_cli();
+
+    struct Timeout* timer = get_free_timer();
+
+    if (timer == NULL) {
+        io_store_eflags(eflag);
+        return 1;
+    }
+
+    init_timeout(timer);
+    timer->buffer = buffer;
+    // our timer precision is 1/100
+    timer->timeout = timer_control->count + (ms / 10);
+    timer->data = data;
+    timer->used = 1;
+
+    insert_timer(timer);
+
     io_store_eflags(eflag);
 
     return 0;
 }
 
+int task_switch_in_ms = 20;
+void task_init(void)
+{
+    task_timer = get_free_timer();
+    init_timeout(task_timer);
+    task_timer->timeout = timer_control->count + (task_switch_in_ms / 10);
+    task_timer->used = 1;
+    current_task = 3;
+    insert_timer(task_timer);
+}
+
+void task_switch(void)
+{
+    task_timer = get_free_timer();
+    init_timeout(task_timer);
+    task_timer->timeout = timer_control->count + (task_switch_in_ms / 10);
+    task_timer->used = 1;
+
+    int next_task = 0;
+    if (current_task == 3)
+        next_task = 4;
+    else if (current_task == 4)
+        next_task = 3;
+
+    current_task = next_task;
+    insert_timer(task_timer);
+    farjmp(0, next_task * 8);
+}

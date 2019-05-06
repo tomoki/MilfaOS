@@ -198,3 +198,7 @@ struct TimerControl {
 struct TimerControl* timer_control;
 void init_pit(void);
 int set_timeout(struct RingBufferChar* buffer, unsigned char data, unsigned int ms);
+
+int current_task;
+struct Timeout* task_timer;
+void task_init(void);

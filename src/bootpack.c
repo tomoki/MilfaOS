@@ -11,7 +11,6 @@ void task4_main(struct LayerControl* layerControl)
     unsigned char internal_buffer[100];
     initialize_ringbuffer_char(&timeout_buffer, internal_buffer, 100);
 
-    set_timeout(&timeout_buffer, 5, 5000);
     set_timeout(&timeout_buffer, 1, 1000);
 
     struct Layer* task4_layer = layer_create(layerControl, 0, 100, 300, 40);
@@ -35,9 +34,6 @@ void task4_main(struct LayerControl* layerControl)
                 count_per_1sec++;
                 set_timeout(&timeout_buffer, 1, 1000);
                 layer_refresh_entire(layerControl, task4_layer);
-            } else if (data == 5) {
-                farjmp(0, 3*8);
-                set_timeout(&timeout_buffer, 5, 5000);
             }
         }
         layer_flush(layerControl);
@@ -79,7 +75,7 @@ void MilfaMain(void)
 
     struct Layer* backgroundLayer = layer_create(layerControl, 0, 0, bootInfo->screenWidth, bootInfo->screenHeight);
     {
-        layer_clear(backgroundLayer);
+        memset(backgroundLayer->buffer, 14, backgroundLayer->width * backgroundLayer->height);
         layer_refresh_entire(layerControl, backgroundLayer);
         layer_change_zindex(layerControl, backgroundLayer, -100);
     }
@@ -124,7 +120,6 @@ void MilfaMain(void)
 
     set_timeout(&timeout_buffer, 1, 1000);
     set_timeout(&timeout_buffer, 3, 3000);
-    set_timeout(&timeout_buffer, 10, 10000);
 
     struct TaskStatusSegment tss[2];
     tss[0].ldtr = 0;
@@ -160,6 +155,9 @@ void MilfaMain(void)
     // Current program is 3rd of GDT.
     load_tr(3 * 8);
 
+    // Allow taskswitch.
+    task_init();
+
     while (1) {
 
         char str[256];
@@ -192,8 +190,7 @@ void MilfaMain(void)
                 mouse_y += mouse_data.y;
                 mouse_x = MAX(0, MIN(bootInfo->screenWidth, mouse_x));
                 mouse_y = MAX(0, MIN(bootInfo->screenHeight, mouse_y));
-                // Draw mouse
-                // put_block8(bootInfo->vram, bootInfo->screenWidth, mouse, 16, 16, mouse_x, mouse_y);
+
                 layer_move(layerControl, mouseLayer, mouse_x, mouse_y);
 
                 char str[256];
@@ -213,12 +210,6 @@ void MilfaMain(void)
             } else if(data == 3) {
                 fired_per_3_sec++;
                 set_timeout(&timeout_buffer, 3, 3000);
-            } else if(data == 10) {
-                // test
-                farjmp(0, 4*8);
-
-                fired_per_10_sec++;
-                set_timeout(&timeout_buffer, 10, 10000);
             }
         } else {
             io_sti();
