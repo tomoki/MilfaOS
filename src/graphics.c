@@ -216,6 +216,11 @@ void layer_change_zindex(struct LayerControl* lc, struct Layer* layer, int zinde
     layer_sort(lc);
 }
 
+void layer_clear(struct Layer* layer)
+{
+    memset(layer->buffer, TRANSPARENT, layer->width * layer->height);
+}
+
 struct LayerControl* init_layer_control(unsigned char* vram, int width, int height)
 {
     struct LayerControl* lc = (struct LayerControl*) malloc(sizeof(struct LayerControl));

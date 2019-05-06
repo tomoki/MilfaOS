@@ -52,6 +52,7 @@ void layer_refresh(struct LayerControl* lc, struct Layer* layer, int x0, int y0,
 void layer_refresh_entire(struct LayerControl* lc, struct Layer* layer);
 void layer_move(struct LayerControl* lc, struct Layer* layer, int x, int y);
 void layer_change_zindex(struct LayerControl* lc, struct Layer* layer, int zindex);
+void layer_clear(struct Layer* layer);
 struct LayerControl* init_layer_control(unsigned char* vram, int width, int height);
 void layer_flush(struct LayerControl* lc);
 

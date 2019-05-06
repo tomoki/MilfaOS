@@ -5,13 +5,17 @@
 #include <math.h>
 #include <string.h>
 
-void task4_main(void)
+void task4_main(struct LayerControl* layerControl)
 {
     struct RingBufferChar timeout_buffer;
     unsigned char internal_buffer[100];
     initialize_ringbuffer_char(&timeout_buffer, internal_buffer, 100);
 
     set_timeout(&timeout_buffer, 5, 5000);
+    set_timeout(&timeout_buffer, 1, 1000);
+
+    struct Layer* task4_layer = layer_create(layerControl, 0, 100, 300, 40);
+    int count_per_1sec = 0;
 
     while (1) {
         io_cli();
@@ -23,11 +27,20 @@ void task4_main(void)
             unsigned char data;
             get_ringbuffer_char(&timeout_buffer, &data);
             io_sti();
-            if (data == 5) {
+            if (data == 1) {
+                char s[256];
+                sprintf(s, "Tasks4 %d/sec", count_per_1sec);
+                layer_clear(task4_layer);
+                putfont8_str(task4_layer->buffer, task4_layer->width, s, font, 0, 0, 0);
+                count_per_1sec++;
+                set_timeout(&timeout_buffer, 1, 1000);
+                layer_refresh_entire(layerControl, task4_layer);
+            } else if (data == 5) {
                 farjmp(0, 3*8);
                 set_timeout(&timeout_buffer, 5, 5000);
             }
         }
+        layer_flush(layerControl);
     }
 }
 
@@ -66,7 +79,7 @@ void MilfaMain(void)
 
     struct Layer* backgroundLayer = layer_create(layerControl, 0, 0, bootInfo->screenWidth, bootInfo->screenHeight);
     {
-        memset(backgroundLayer->buffer, 14, backgroundLayer->width * backgroundLayer->height);
+        layer_clear(backgroundLayer);
         layer_refresh_entire(layerControl, backgroundLayer);
         layer_change_zindex(layerControl, backgroundLayer, -100);
     }
@@ -130,8 +143,10 @@ void MilfaMain(void)
     tss[1].ecx = 0;
     tss[1].edx = 0;
     tss[1].ebx = 0;
-    // stack grows to 0.
-    tss[1].esp = (int)task4_stack + 64*1024;
+    // stack grows to 0. we can use task4_stack + 64*1024 - 1 (to be aligned 4 byte, task4_stack + 64*1024 - 4).
+    // task4_main takes layercontrol* as argument
+    *(int*) ((int)task4_stack + 64*1024 - 4) = (int) layerControl;
+    tss[1].esp = (int)task4_stack + 64*1024 - 8;
     tss[1].ebp = 0;
     tss[1].edi = 0;
     // except cs, use asmhead's segment temporary.
@@ -149,7 +164,7 @@ void MilfaMain(void)
 
         char str[256];
         sprintf(str, "%d cnt/sec, %d cnt/3sec, %d cnt/10sec", fired_per_1_sec, fired_per_3_sec, fired_per_10_sec);
-        memset(keyboardInfoLayer->buffer, TRANSPARENT, keyboardInfoLayer->width * keyboardInfoLayer->height);
+        layer_clear(keyboardInfoLayer);
         putfont8_str(keyboardInfoLayer->buffer, keyboardInfoLayer->width, str, font, 5, 0, 0);
         layer_refresh_entire(layerControl, keyboardInfoLayer);
 
@@ -164,7 +179,7 @@ void MilfaMain(void)
             get_ringbuffer_char(&keyboard_inputs, &data);
             char str[256];
             sprintf(str, "keyboard %d", data);
-            memset(keyboardInfoLayer->buffer, TRANSPARENT, keyboardInfoLayer->width * keyboardInfoLayer->height);
+            layer_clear(keyboardInfoLayer);
             putfont8_str(keyboardInfoLayer->buffer, keyboardInfoLayer->width, str, font, 5, 0, 0);
             layer_refresh_entire(layerControl, keyboardInfoLayer);
         } else if (mouse_count > 0) {
@@ -183,7 +198,7 @@ void MilfaMain(void)
 
                 char str[256];
                 sprintf(str, "mouse %d %d %d", mouse_data.button, mouseLayer->x, mouseLayer->y);
-                memset(mouseInfoLayer->buffer, TRANSPARENT, mouseInfoLayer->width * mouseInfoLayer->height);
+                layer_clear(mouseInfoLayer);
                 putfont8_str(mouseInfoLayer->buffer, mouseInfoLayer->width, str, font, 5, 0, 0);
                 layer_refresh_entire(layerControl, mouseInfoLayer);
             }
@@ -204,7 +219,6 @@ void MilfaMain(void)
 
                 fired_per_10_sec++;
                 set_timeout(&timeout_buffer, 10, 10000);
-
             }
         } else {
             io_sti();
