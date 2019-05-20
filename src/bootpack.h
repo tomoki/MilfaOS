@@ -178,6 +178,7 @@ int decode_mouse(struct MouseData*, unsigned int next_data);
 extern unsigned char font[4096];
 
 // timer.c
+// FIXME: 1000 doesn't work, why?
 #define MAX_NUMBER_OF_TIMERS 100
 
 struct Timeout {
@@ -199,6 +200,30 @@ struct TimerControl* timer_control;
 void init_pit(void);
 int set_timeout(struct RingBufferChar* buffer, unsigned char data, unsigned int ms);
 
-int current_task;
+#define MAX_NUMBER_OF_TASKS 100
+#define TASK_SWITCH_TIMEFRAME_IN_MS 20
+#define INITIAL_TASK_SELECTOR 3 // The first index of task, which will be MilfaMain
+#define TASK_FLAG_NONE 0
+#define TASK_FLAG_USED (1u << 0)
+
+struct Task {
+    int selector; // index of gdt
+    struct TaskStatusSegment tss;
+    unsigned int flags;
+};
+
+struct TaskControl {
+    int number_of_tasks;
+
+    struct Task tasks[MAX_NUMBER_OF_TASKS];
+    int number_of_running_tasks;
+    int current_task_index;
+    // FIXME: should be list.
+    struct Task* running[MAX_NUMBER_OF_TASKS];
+};
+
+struct TaskControl* task_control;
 struct Timeout* task_timer;
-void task_init(void);
+struct Task* task_init(void); // returns current task
+struct Task* task_new(void);
+void task_start(struct Task* task);

@@ -121,42 +121,28 @@ void MilfaMain(void)
     set_timeout(&timeout_buffer, 1, 1000);
     set_timeout(&timeout_buffer, 3, 3000);
 
-    struct TaskStatusSegment tss[2];
-    tss[0].ldtr = 0;
-    tss[0].iomap = 0x40000000;
-    tss[1].ldtr = 0;
-    tss[1].iomap = 0x40000000;
-
-    // 103 == sizeof(struct SegmentDescriptor)?
-    set_segment_descriptor(&((struct SegmentDescriptor*) ADDR_GDT)[3], 103, (int) (&tss[0]), AR_TSS32);
-    set_segment_descriptor(&((struct SegmentDescriptor*) ADDR_GDT)[4], 103, (int) (&tss[1]), AR_TSS32);
-
-    void* task4_stack = malloc(64 * 1024);
-    tss[1].eip = (int)&task4_main;
-    tss[1].eflags = 0x00000202; // IF = 1, default value?
-    tss[1].eax = 0;
-    tss[1].ecx = 0;
-    tss[1].edx = 0;
-    tss[1].ebx = 0;
-    // stack grows to 0. we can use task4_stack + 64*1024 - 1 (to be aligned 4 byte, task4_stack + 64*1024 - 4).
-    // task4_main takes layercontrol* as argument
-    *(int*) ((int)task4_stack + 64*1024 - 4) = (int) layerControl;
-    tss[1].esp = (int)task4_stack + 64*1024 - 8;
-    tss[1].ebp = 0;
-    tss[1].edi = 0;
-    // except cs, use asmhead's segment temporary.
-    tss[1].es = 1 * 8;
-    tss[1].cs = 2 * 8; // bootpack's code segment
-    tss[1].ss = 1 * 8;
-    tss[1].ds = 1 * 8;
-    tss[1].fs = 1 * 8;
-    tss[1].gs = 1 * 8;
-
-    // Current program is 3rd of GDT.
-    load_tr(3 * 8);
-
     // Allow taskswitch.
-    task_init();
+    struct Task* this_task = task_init();
+    (void) this_task;
+
+    struct Task* task4 = task_new();
+    {
+        void* task4_stack = malloc(64 * 1024);
+        task4->tss.eip = (int)&task4_main;
+        task4->tss.eflags = 0x00000202; // IF = 1, default value?
+        // stack grows to 0. we can use task4_stack + 64*1024 - 1 (to be aligned 4 byte, task4_stack + 64*1024 - 4).
+        // task4_main takes layercontrol* as argument
+        *(int*) ((int)task4_stack + 64*1024 - 4) = (int) layerControl;
+        task4->tss.esp = (int)task4_stack + 64*1024 - 8;
+        // except cs, use asmhead's segment temporary.
+        task4->tss.es = 1 * 8;
+        task4->tss.cs = 2 * 8; // bootpack's code segment
+        task4->tss.ss = 1 * 8;
+        task4->tss.ds = 1 * 8;
+        task4->tss.fs = 1 * 8;
+        task4->tss.gs = 1 * 8;
+    }
+    task_start(task4);
 
     while (1) {
 
